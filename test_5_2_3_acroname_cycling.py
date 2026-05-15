@@ -17,26 +17,14 @@ import argparse
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-import brainstem
-from brainstem.result import Result
-from usb_utils import get_usb_speed, check_hub_enumerated, log_result, print_summary
+from usb_utils import (get_usb_speed, check_hub_enumerated, connect_hub,
+                       describe_hub, log_result, print_summary)
 
 TEST_ID = "5_2_3_acroname_cycling"
 TEST_NAME = "Test 5.2.3 — Acroname Hub API Control Cycling"
 DISABLE_WAIT = 5
 RECONNECT_WAIT = 10
 REPORT_EVERY = 10
-
-
-def connect_hub():
-    specs = brainstem.discover.findAllModules(brainstem.link.Spec.USB)
-    if not specs:
-        return None
-    hub = brainstem.stem.USBHub3c()
-    err = hub.connectFromSpec(specs[0])
-    if err == Result.NO_ERROR:
-        return hub
-    return None
 
 
 def main():
@@ -56,6 +44,16 @@ def main():
     print(f"Cable sample: {sample_label}")
     print(f"Cycles: {total_cycles}")
     print(f"Hub port: {args.port} | Device: {args.device}")
+
+    probe, info = connect_hub()
+    if probe is None:
+        print("  ABORT: no Acroname hub found via BrainStem API")
+        return 1
+    probe.disconnect()
+    print(f"Hub: {describe_hub(info)}")
+    if args.port >= info["ports"]:
+        print(f"  WARNING: port {args.port} is out of range for this hub "
+              f"(0–{info['ports'] - 1})")
     print(f"{'─'*60}")
 
     speed_code, speed_label, _ = get_usb_speed(device=args.device)
@@ -71,7 +69,7 @@ def main():
     start_time = time.time()
 
     for cycle in range(1, total_cycles + 1):
-        hub = connect_hub()
+        hub, _ = connect_hub()
         if hub is None:
             api_errors += 1
             failed += 1

@@ -14,6 +14,7 @@ Fail: Any wake results in fallback, no enumeration, or recovery > 60s
 import sys
 import os
 import time
+import argparse
 import subprocess
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -25,7 +26,6 @@ TEST_NAME = "Test 5.1.4 — Sleep/Wake Cycling"
 TOTAL_CYCLES = 10
 SLEEP_DURATION = 30
 MAX_RECOVERY_WAIT = 60
-SAMPLE_LABEL = sys.argv[1] if len(sys.argv) > 1 else "sample_1"
 
 
 def schedule_wake_and_sleep():
@@ -47,31 +47,38 @@ def schedule_wake_and_sleep():
     subprocess.run(["pmset", "sleepnow"], capture_output=True, text=True)
 
 
-def wait_for_hub(timeout):
+def wait_for_hub(timeout, device):
     """Poll for hub enumeration up to timeout seconds. Returns time taken or -1."""
     start = time.time()
     while time.time() - start < timeout:
-        if check_hub_enumerated():
+        if check_hub_enumerated(device=device):
             return time.time() - start
         time.sleep(2)
     return -1
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("sample", nargs="?", default="sample_1")
+    parser.add_argument("--device", choices=["control", "data"], default="control",
+                        help="Which hub interface to check: control (Stem) or data (Up0)")
+    args = parser.parse_args()
+
     # Check for root privileges
     if os.geteuid() != 0:
         print("ERROR: This test requires sudo. Run with:")
-        print(f"  sudo python3 {os.path.basename(__file__)} [{SAMPLE_LABEL}]")
+        print(f"  sudo python3 {os.path.basename(__file__)} "
+              f"[{args.sample}] --device {args.device}")
         return 1
 
     print(f"{TEST_NAME}")
-    print(f"Cable sample: {SAMPLE_LABEL}")
+    print(f"Cable sample: {args.sample}")
     print(f"Cycles: {TOTAL_CYCLES}")
-    print(f"Sleep duration: {SLEEP_DURATION}s")
+    print(f"Sleep duration: {SLEEP_DURATION}s | Device: {args.device}")
     print(f"{'─'*60}")
 
     # Verify baseline before starting
-    speed_code, speed_label, _ = get_usb_speed()
+    speed_code, speed_label, _ = get_usb_speed(device=args.device)
     if speed_code is None or speed_code < 3:
         print(f"  ABORT: Hub not at 5Gbps before test start (got: {speed_label})")
         return 1
@@ -92,28 +99,28 @@ def main():
 
         # Wait for hub to appear
         print(f"    Waiting for hub re-enumeration (max {MAX_RECOVERY_WAIT}s)...")
-        recovery_time = wait_for_hub(MAX_RECOVERY_WAIT)
+        recovery_time = wait_for_hub(MAX_RECOVERY_WAIT, args.device)
 
         if recovery_time < 0:
             failed += 1
             print(f"    Hub not found after {MAX_RECOVERY_WAIT}s — FAIL")
-            log_result(TEST_ID, f"{SAMPLE_LABEL}_cycle_{cycle}", "FAIL", None, "not found",
-                       f"No enumeration within {MAX_RECOVERY_WAIT}s")
+            log_result(TEST_ID, f"{args.sample}_cycle_{cycle}", "FAIL", None, "not found",
+                       f"device={args.device}, no enumeration within {MAX_RECOVERY_WAIT}s")
             continue
 
         # Check speed
-        speed_code, speed_label, _ = get_usb_speed()
+        speed_code, speed_label, _ = get_usb_speed(device=args.device)
 
         if speed_code is not None and speed_code >= 3:
             passed += 1
             print(f"    Speed: {speed_label} (recovered in {recovery_time:.1f}s) — PASS")
-            log_result(TEST_ID, f"{SAMPLE_LABEL}_cycle_{cycle}", "PASS", speed_code, speed_label,
-                       f"recovery={recovery_time:.1f}s")
+            log_result(TEST_ID, f"{args.sample}_cycle_{cycle}", "PASS", speed_code, speed_label,
+                       f"device={args.device}, recovery={recovery_time:.1f}s")
         else:
             failed += 1
             print(f"    Speed: {speed_label} (recovered in {recovery_time:.1f}s) — FAIL")
-            log_result(TEST_ID, f"{SAMPLE_LABEL}_cycle_{cycle}", "FAIL", speed_code, speed_label,
-                       f"recovery={recovery_time:.1f}s, fallback")
+            log_result(TEST_ID, f"{args.sample}_cycle_{cycle}", "FAIL", speed_code, speed_label,
+                       f"device={args.device}, recovery={recovery_time:.1f}s, fallback")
 
     print_summary(TEST_ID, TEST_NAME, TOTAL_CYCLES, passed, failed)
     return 0 if failed == 0 else 1

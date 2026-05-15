@@ -55,7 +55,10 @@ The BrainStem API communicates over the control (Stem) connection. When running 
 
 ### Hardware
 - Apple MacBook M4 (with USB-C / Thunderbolt port)
-- Acroname USBHub3c (S79-USBHUB-3P) connected via USB-C
+- An Acroname BrainStem USB hub connected via USB-C. The suite auto-detects
+  the model (tested with **USBHub3c** and **USBHub3p**); the hub class,
+  serial, port count, and ioreg device-node names are resolved at runtime
+  — nothing is hardcoded to a specific model.
 - Cable samples under test (minimum 3, preferably from different manufacturing lots)
 - USB 3.0+ storage device (for bandwidth tests 5.2.x — not required for link tests)
 
@@ -226,6 +229,27 @@ All tests use `ioreg -p IOUSB` to query the Acroname hub's negotiated link speed
 A passing result requires `USBSpeed >= 3`.
 
 > **Note:** `system_profiler SPUSBDataType` may return empty output on some macOS configurations. The `ioreg` method is used as the primary detection mechanism.
+
+#### Model-agnostic detection
+
+Device-node names are **not** hardcoded. `usb_utils.py` scans `ioreg -p IOUSB -l`
+for nodes whose vendor is `Acroname Inc.`, then classifies them by name:
+the control interface always contains `Stem` (e.g. `USBHub3c-Stem`,
+`USBHub3p-Stem`); everything else is the data path. For the data path the
+**highest-speed** Acroname node is reported, so a USB-2 fallback (only the
+USB-2 companion present, SuperSpeed node gone) is correctly reported as
+High Speed instead of being misclassified as an enumeration timeout.
+
+The BrainStem hub class is chosen from the discovered model code
+(`USBHub3p` = model 19), falling back to probing known classes. Port range
+varies by model (USBHub3c: 0–3, USBHub3p: 0–7); an out-of-range `--port`
+prints a warning.
+
+> **USBHub3p note:** on the 3p the Stem/control interface is a USB-2
+> management port (enumerates at Full Speed, 12 Mbps) — it is *not* a
+> 5 Gbps control port like the 3c's. On a 3p, run cable validation with
+> `--device data` against a downstream data port; `--device control` will
+> always fail the SuperSpeed criterion by design.
 
 ### BrainStem API Considerations
 
