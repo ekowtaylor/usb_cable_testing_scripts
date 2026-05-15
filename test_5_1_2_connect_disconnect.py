@@ -78,7 +78,7 @@ def main():
         enum_start = time.time()
         speed_code = None
         speed_label = "not found"
-        while time.time() - enum_start < 30:
+        while time.time() - enum_start < 60:
             if check_hub_enumerated(device=args.device):
                 time.sleep(2)
                 speed_code, speed_label, _ = get_usb_speed(device=args.device)
