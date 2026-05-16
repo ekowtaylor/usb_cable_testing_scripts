@@ -192,18 +192,79 @@ MacBook Pro M4 Max (Mac16,5)
     └── USBHub3c-Stem
 ```
 
-### Acroname Hub Details
+### Acroname Hub Details — USBHub3c
 - Model: USBHub3c (S79-USBHUB-3P)
 - Serial: 68D1A7BE
 - 4 downstream ports (ports 0–3), all reporting state 0x000031f0
 - Port 0 confirmed as the physical data port connected to USBHub3c-3-Up0 (verified by port-toggle test)
 
+### Acroname Hub Details — USBHub3p (session 2)
+- Model: USBHub3p (model 19)
+- Two units tested: serial 0xb72d5b42 and serial 0xfdd9afb6
+- 8 downstream ports (ports 0–7)
+- USB 3.x uplink enumeration was intermittent on direct Mac USB-C connections; stable when routed through a USB-C dock
+
+---
+
+## Observations Relevant to AHEAD Proposal (v1.1, May 3, 2026)
+
+The AHEAD proposal (prepared by Joe Arauzo, Client Director) documents the USB signal chain analysis for the Ramsey STE4453M3 to STE4453M4 transition. Several observations from this testing session are relevant to the assumptions in that proposal.
+
+### Observation 1: Acroname S79-USBHUB-3P Negotiated Speeds Exceed Stated 5Gbps
+
+The AHEAD proposal states: *"The internal Acroname hub supports USB 3.1 Gen 1 at 5Gbps"* and identifies the Acroname S79-USBHUB-3P as the *"speed-governing component"* that caps throughput at 5Gbps.
+
+Observed speeds on S79-USBHUB-3P hardware during testing:
+
+| Hub Model | Interface | Observed Speed | AHEAD Stated Speed |
+|---|---|---|---|
+| USBHub3c | Control (Stem) port | 5 Gbps | 5 Gbps |
+| USBHub3c | Data (Up0) uplink | **20 Gbps** | 5 Gbps |
+| USBHub3p | Control (Stem) port | 12 Mbps (Full Speed) | — |
+| USBHub3p | Data uplink (USBHub3p-3[A]) | **10 Gbps** | 5 Gbps |
+| USBHub3p | Downstream port (iPhone on port 3) | **10 Gbps** | 5 Gbps |
+
+The Stem/control port is capped (5Gbps on USBHub3c, 12Mbps on USBHub3p), but the data uplink and downstream ports negotiate at the full capability of the connected devices and cables. The hub does not appear to be governing the speed at 5Gbps on its data path.
+
+### Observation 2: U420-010 (3m) Cable Performs Well Beyond Rated Speed
+
+The AHEAD proposal notes: *"The Tripp Lite U420-010 operates at the practical limit for passive 5Gbps cables"* and recommends validation at 3m.
+
+Observed: The U420-010 negotiated **20 Gbps** on the USBHub3c data port — 4x its rated 5Gbps speed. At the production-relevant 5Gbps on the control port, it passed **70/70 cycles with zero failures**. The cable has substantial signal margin at 3m and is not operating near its electrical limits.
+
+### Observation 3: Plan B Hub Replacement May Not Be Required for 10Gbps
+
+The AHEAD proposal states Plan B requires replacing the Acroname S79-USBHUB-3P with the S85-USB-C-Switch to achieve 10Gbps throughput.
+
+Observed: The S79-USBHUB-3P (USBHub3p) negotiated 10 Gbps on both the uplink and downstream ports without any hub replacement. An iPhone connected to a downstream port achieved 10 Gbps through the existing hub hardware. This suggests the S79-USBHUB-3P may already support 10Gbps data throughput on its data path, and the hub replacement specified in Plan B may not be necessary to achieve 10Gbps end-to-end.
+
+**Note:** This observation is based on link negotiation speed only. Sustained throughput at 10Gbps through the hub was not tested. The hub's internal switching fabric may still impose a 5Gbps throughput cap even if the ports negotiate at higher speeds. Bandwidth testing (test 5.2.1/5.2.2) would be needed to confirm actual data throughput.
+
+### Observation 4: USBHub3p Uplink Enumeration Instability
+
+The USBHub3p's USB 3.x uplink was unreliable when connected directly to a MacBook Pro M4 Max USB-C port. The device would either:
+- Connect as a generic `IOUSBHostDevice` and never complete device descriptor enumeration
+- Briefly enumerate and then drop
+- Only establish a USB 2.x connection (`USBHub3p-2[A]`) without the USB 3.x companion (`USBHub3p-3[A]`)
+
+The uplink enumerated successfully and stably when routed through a USB-C dock. This was observed with both USBHub3p units (serials 0xb72d5b42 and 0xfdd9afb6) and with the U420-006 cable. The USBHub3c did not exhibit this issue.
+
+This may be relevant to Mac mini deployments under Plans A.2 and B if the Mac mini's USB-C ports exhibit similar behavior to the MacBook Pro M4 Max. Testing with the actual Mac mini M4 (Z1JX0007R) hardware is recommended.
+
+### Observation 5: Hub Speed Control Limitations
+
+The BrainStem API was tested for per-port speed capping capability:
+- `setSuperSpeedDataDisable()` works but drops the port to USB 2.0 (480Mbps) — there is no way to cap at exactly 5Gbps
+- `setConnectMode()`, `setPortMode()` with lane-specific flags, and boost mode controls all returned UNIMPLEMENTED (error 21) on the USBHub3c
+- The hub does not provide fine-grained speed tier control between USB 2.0 and its maximum negotiated speed
+
 ---
 
 ## Next Steps
 
-1. **Test U420-006** (1.83m) through the same test suite on a separate machine for comparison
+1. **Test U420-006** (1.83m) through the full test suite — uplink enumeration instability on USBHub3p needs to be resolved first
 2. **Run test 5.1.4** (sleep/wake cycling) manually with sudo
-3. **Increase polling timeout to 60s** and rerun data port cycling tests to determine if enumeration timeout failures are timing-related
+3. **Sustained throughput testing** (test 5.2.1) to determine if the S79-USBHUB-3P can actually pass 10Gbps data, not just negotiate it
 4. **Test with Ramsey STE4453M4 enclosure** in the signal chain when available (tests 5.1.3, 5.2.x, 5.3.x)
-5. **Test additional cable samples** from different manufacturing lots
+5. **Test with Mac mini M4** (Z1JX0007R) to verify USBHub3p uplink enumeration behavior on the actual deployment hardware
+6. **Test additional cable samples** from different manufacturing lots
