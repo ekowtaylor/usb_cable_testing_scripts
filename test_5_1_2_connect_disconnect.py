@@ -16,7 +16,7 @@ import argparse
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from usb_utils import (get_usb_speed, check_hub_enumerated, connect_hub,
-                       describe_hub, log_result, print_summary)
+                       describe_hub, hub_ident, log_result, print_summary)
 
 TEST_ID = "5_1_2_connect_disconnect"
 TEST_NAME = "Test 5.1.2 — Connect/Disconnect Cycling"
@@ -45,6 +45,7 @@ def main():
         return 1
     probe.disconnect()
     print(f"Hub: {describe_hub(info)}")
+    hub_model, hub_serial = hub_ident(info)
     if args.port >= info["ports"]:
         print(f"  WARNING: port {args.port} is out of range for this hub "
               f"(0–{info['ports'] - 1})")
@@ -60,7 +61,10 @@ def main():
         if hub is None:
             print(f"    Cannot connect to hub API")
             failed += 1
-            log_result(TEST_ID, f"{args.sample}_cycle_{cycle}", "FAIL", None, "no API")
+            log_result(TEST_ID, args.sample, "FAIL", None, "no API",
+                       cycle=cycle, device=args.device, port=args.port,
+                       hub_model=hub_model, hub_serial=hub_serial,
+                       notes="API connection failed")
             time.sleep(RECONNECT_WAIT)
             continue
 
@@ -98,8 +102,9 @@ def main():
             status = "FAIL"
             print(f"    Speed: {speed_label} — FAIL (fallback)")
 
-        log_result(TEST_ID, f"{args.sample}_cycle_{cycle}", status, speed_code, speed_label,
-                   f"port={args.port},device={args.device}")
+        log_result(TEST_ID, args.sample, status, speed_code, speed_label,
+                   cycle=cycle, device=args.device, port=args.port,
+                   hub_model=hub_model, hub_serial=hub_serial)
 
     print_summary(TEST_ID, TEST_NAME, TOTAL_CYCLES, passed, failed)
     return 0 if failed == 0 else 1
