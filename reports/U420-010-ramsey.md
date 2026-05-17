@@ -1,6 +1,6 @@
 # USB Cable Validation Report — Tripp Lite U420-010 (x2) with Ramsey STE4453M4
 
-**Cable:** 2x Tripp Lite U420-010 — USB-C to USB-C, 10 ft (3.05 m) each, USB 3.1 Gen 1 (5 Gbps), passive
+**Cable:** 2x Tripp Lite U420-010 — USB-C to USB-C, 10 ft (3.05 m) each, USB 3.2 Gen 1 (5 Gbps), passive
 **Total cable length:** 6.1 m (2x 3.05 m) with Ramsey USB-C I/O connector in between
 **Sample:** `u420_010_ramsey`
 **Operator:** Ekow Taylor, Network Infrastructure Services
