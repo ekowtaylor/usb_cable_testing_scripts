@@ -28,8 +28,8 @@ RECONNECT_WAIT = 10
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("sample", nargs="?", default="sample_1")
-    parser.add_argument("--port", type=int, default=0,
-                        help="Hub port to cycle (default: 0)")
+    parser.add_argument("--port", default="0",
+                        help="Hub port to cycle: 0-7 for downstream, 'upstream' for uplink")
     parser.add_argument("--device", choices=["control", "data"], default="control",
                         help="Which hub interface to check speed on")
     args = parser.parse_args()
@@ -46,8 +46,11 @@ def main():
     probe.disconnect()
     print(f"Hub: {describe_hub(info)}")
     hub_model, hub_serial = hub_ident(info)
-    if args.port >= info["ports"]:
-        print(f"  WARNING: port {args.port} is out of range for this hub "
+    is_upstream = args.port.lower() == "upstream"
+    port_num = None if is_upstream else int(args.port)
+    port_label = "upstream" if is_upstream else str(port_num)
+    if not is_upstream and port_num >= info["ports"]:
+        print(f"  WARNING: port {port_num} is out of range for this hub "
               f"(0–{info['ports'] - 1})")
     print(f"{'─'*60}")
 
@@ -62,18 +65,24 @@ def main():
             print(f"    Cannot connect to hub API")
             failed += 1
             log_result(TEST_ID, args.sample, "FAIL", None, "no API",
-                       cycle=cycle, device=args.device, port=args.port,
+                       cycle=cycle, device=args.device, port=port_label,
                        hub_model=hub_model, hub_serial=hub_serial,
                        notes="API connection failed")
             time.sleep(RECONNECT_WAIT)
             continue
 
-        print(f"    Disabling port {args.port}...")
-        hub.usb.setPortDisable(args.port)
-        time.sleep(DISCONNECT_WAIT)
-
-        print(f"    Re-enabling port {args.port}...")
-        hub.usb.setPortEnable(args.port)
+        if is_upstream:
+            print(f"    Disabling upstream...")
+            hub.usb.setUpstreamMode(255)  # UPSTREAM_MODE_NONE
+            time.sleep(DISCONNECT_WAIT)
+            print(f"    Re-enabling upstream...")
+            hub.usb.setUpstreamMode(2)  # UPSTREAM_MODE_AUTO
+        else:
+            print(f"    Disabling port {port_num}...")
+            hub.usb.setPortDisable(port_num)
+            time.sleep(DISCONNECT_WAIT)
+            print(f"    Re-enabling port {port_num}...")
+            hub.usb.setPortEnable(port_num)
         hub.disconnect()
 
         print(f"    Waiting for re-enumeration...")
@@ -103,7 +112,7 @@ def main():
             print(f"    Speed: {speed_label} — FAIL (fallback)")
 
         log_result(TEST_ID, args.sample, status, speed_code, speed_label,
-                   cycle=cycle, device=args.device, port=args.port,
+                   cycle=cycle, device=args.device, port=port_label,
                    hub_model=hub_model, hub_serial=hub_serial)
 
     print_summary(TEST_ID, TEST_NAME, TOTAL_CYCLES, passed, failed)
