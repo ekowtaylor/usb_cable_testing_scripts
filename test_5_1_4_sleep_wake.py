@@ -19,7 +19,8 @@ import subprocess
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from usb_utils import get_usb_speed, check_hub_enumerated, log_result, print_summary
+from usb_utils import (get_usb_speed, check_hub_enumerated, hub_label,
+                       log_result, print_summary)
 
 TEST_ID = "5_1_4_sleep_wake"
 TEST_NAME = "Test 5.1.4 — Sleep/Wake Cycling"
@@ -71,8 +72,11 @@ def main():
               f"[{args.sample}] --device {args.device}")
         return 1
 
+    hub_model, hub_serial = hub_label()
+
     print(f"{TEST_NAME}")
     print(f"Cable sample: {args.sample}")
+    print(f"Hub: {hub_model or 'unknown'} {hub_serial}")
     print(f"Cycles: {TOTAL_CYCLES}")
     print(f"Sleep duration: {SLEEP_DURATION}s | Device: {args.device}")
     print(f"{'─'*60}")
@@ -104,8 +108,10 @@ def main():
         if recovery_time < 0:
             failed += 1
             print(f"    Hub not found after {MAX_RECOVERY_WAIT}s — FAIL")
-            log_result(TEST_ID, f"{args.sample}_cycle_{cycle}", "FAIL", None, "not found",
-                       f"device={args.device}, no enumeration within {MAX_RECOVERY_WAIT}s")
+            log_result(TEST_ID, args.sample, "FAIL", None, "not found",
+                       cycle=cycle, device=args.device,
+                       hub_model=hub_model, hub_serial=hub_serial,
+                       notes=f"no enumeration within {MAX_RECOVERY_WAIT}s")
             continue
 
         # Check speed
@@ -114,13 +120,17 @@ def main():
         if speed_code is not None and speed_code >= 3:
             passed += 1
             print(f"    Speed: {speed_label} (recovered in {recovery_time:.1f}s) — PASS")
-            log_result(TEST_ID, f"{args.sample}_cycle_{cycle}", "PASS", speed_code, speed_label,
-                       f"device={args.device}, recovery={recovery_time:.1f}s")
+            log_result(TEST_ID, args.sample, "PASS", speed_code, speed_label,
+                       cycle=cycle, device=args.device,
+                       hub_model=hub_model, hub_serial=hub_serial,
+                       notes=f"recovery={recovery_time:.1f}s")
         else:
             failed += 1
             print(f"    Speed: {speed_label} (recovered in {recovery_time:.1f}s) — FAIL")
-            log_result(TEST_ID, f"{args.sample}_cycle_{cycle}", "FAIL", speed_code, speed_label,
-                       f"device={args.device}, recovery={recovery_time:.1f}s, fallback")
+            log_result(TEST_ID, args.sample, "FAIL", speed_code, speed_label,
+                       cycle=cycle, device=args.device,
+                       hub_model=hub_model, hub_serial=hub_serial,
+                       notes=f"recovery={recovery_time:.1f}s, fallback")
 
     print_summary(TEST_ID, TEST_NAME, TOTAL_CYCLES, passed, failed)
     return 0 if failed == 0 else 1

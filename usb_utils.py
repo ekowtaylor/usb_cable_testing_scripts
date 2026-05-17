@@ -31,8 +31,8 @@ ACRONAME_VENDOR = "Acroname Inc."
 # Unknown models still work via the class-name fallback in connect_hub().
 HUB_MODELS = {
     19: {"class": "USBHub3p", "ports": 8},
-    # USBHub3c / USBHub2x4 model codes are resolved by the fallback probe
-    # below when not listed here.
+    24: {"class": "USBHub3c", "ports": 4},
+    # Other models are resolved by the class-name fallback probe below.
 }
 
 # Ordered class-name fallbacks tried when the model code is not in HUB_MODELS.
@@ -193,16 +193,65 @@ def describe_hub(info):
             f"{info['ports']} ports)")
 
 
-def log_result(test_id, cycle, status, speed_code, speed_label, notes=""):
-    """Append a result row to the test CSV log."""
+RESULT_HEADER = ["timestamp", "sample", "hub_model", "hub_serial", "device",
+                 "port", "cycle", "status", "speed_code", "speed_label", "notes"]
+
+
+def hub_ident(info):
+    """(model_str, serial_str) from a connect_hub() info dict."""
+    if not info:
+        return "", ""
+    serial = info.get("serial")
+    serial_str = f"{serial:#010x}" if isinstance(serial, int) else str(serial)
+    return f"{info['class']} (model {info['model']})", serial_str
+
+
+def hub_label():
+    """Best-effort (model_str, serial_str) for the connected hub.
+
+    Used to stamp results with which hub produced them. Returns "" if the
+    BrainStem SDK is unavailable or no hub is connected (e.g. 5.1.1 run
+    without the SDK), so logging never fails on the identity lookup.
+    """
+    try:
+        hub, info = connect_hub()
+        if hub is None:
+            return "", ""
+        hub.disconnect()
+        return hub_ident(info)
+    except Exception:
+        return "", ""
+
+
+def log_result(test_id, sample, status, speed_code, speed_label,
+               cycle="", device="", port="", hub_model="", hub_serial="",
+               notes=""):
+    """Append a structured result row to the test CSV log.
+
+    Records the cable sample, the hub that produced the result (model +
+    serial), the interface (control/data) and port under test, the cycle
+    number, and the negotiated speed — enough to reconstruct exactly what
+    was tested from the CSV alone. If an existing log uses the older
+    schema, it is archived to <file>.csv.old-schema so rows stay aligned.
+    """
     log_file = os.path.join(RESULTS_DIR, f"{test_id}.csv")
+    if os.path.exists(log_file):
+        with open(log_file, newline="") as f:
+            existing_header = f.readline().strip()
+        if existing_header and existing_header != ",".join(RESULT_HEADER):
+            os.rename(log_file, log_file + ".old-schema")
     file_exists = os.path.exists(log_file)
     with open(log_file, "a", newline="") as f:
         writer = csv.writer(f)
         if not file_exists:
-            writer.writerow(["timestamp", "cycle", "status", "speed_code", "speed_label", "notes"])
+            writer.writerow(RESULT_HEADER)
         writer.writerow([
             datetime.now().isoformat(),
+            sample,
+            hub_model,
+            hub_serial,
+            device,
+            port,
             cycle,
             status,
             speed_code,

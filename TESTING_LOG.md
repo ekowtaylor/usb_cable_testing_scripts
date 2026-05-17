@@ -260,6 +260,42 @@ The BrainStem API was tested for per-port speed capping capability:
 
 ---
 
+## Session — May 15, 2026 (re-run: MacBook Air M5, model-generalized suite)
+
+Re-ran the full runnable suite (5.1.1, 5.1.2, 5.2.3) for the **U420-010** on the
+**USBHub3c** (model 24, serial `0x68D1A7BE`) after generalizing the suite for
+any Acroname hub model and enriching the CSV schema (sample, hub model/serial,
+device, port, cycle). Polling window raised to **60 s**.
+
+- **Control + data ports: 145 rows logged, zero FAIL, zero timeouts, zero USB-2 fallbacks.**
+- **Resolved the prior open question:** the earlier 30 s-window data-port
+  failures (5.1.2 19/20, 5.2.3 47/50) were re-enumeration latency, not the
+  cable — at 60 s the data port passes 70/70.
+- **New finding:** per-cycle speed logging shows the data-port link re-trained
+  at 5 Gbps instead of 20 Gbps on ≈ 5.7 % of reconnects (4/70). All ≥ rated
+  speed, so PASS, but the over-spec 20 Gbps link is not 100 % reproducible.
+
+**Full write-up:** [`reports/U420-010.md`](reports/U420-010.md) ·
+**Raw CSVs:** [`reports/U420-010/raw/`](reports/U420-010/raw/)
+
+---
+
+## Session — May 15, 2026 (U420-006 comparison run)
+
+Ran the full runnable suite for the **U420-006** (6 ft / 1.83 m) on the same
+USBHub3c, control then data, identical methodology.
+
+- **142 rows logged, zero FAIL, zero timeouts, zero USB-2 fallbacks** (control 71/71, data 71/71).
+- Data-port reconnect re-train to 5 Gbps: **6/70 (8.6 %)** vs U420-010's 4/70 (5.7 %)
+  — a 2-event difference, within noise. Cables are effectively equivalent.
+- **Length verdict:** U420-010's extra 1.2 m introduces **no measurable penalty**
+  at rated 5 Gbps; either cable is acceptable — choose by length/cost, not signal.
+
+**Full write-up:** [`reports/U420-006.md`](reports/U420-006.md) ·
+**Raw CSVs:** [`reports/U420-006/raw/`](reports/U420-006/raw/)
+
+---
+
 ## Next Steps
 
 1. **Test U420-006** (1.83m) through the full test suite — uplink enumeration instability on USBHub3p needs to be resolved first

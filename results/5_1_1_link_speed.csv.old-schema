@@ -1,0 +1,3 @@
+timestamp,cycle,status,speed_code,speed_label,notes
+2026-05-15T15:37:33.359127,u420_010_sample_1,PASS,5,SuperSpeed+ 2x1 (20 Gbps),device=data
+2026-05-15T17:46:07.080493,u420_010_sample_1,PASS,3,SuperSpeed (5 Gbps),device=control
