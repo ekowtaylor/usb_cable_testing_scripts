@@ -1,0 +1,31 @@
+USB Throughput Test — raw data
+Sample: u420_010_ramsey  |  Date: 2026-05-18
+Chain: MacBook Pro M4 Max -> U420-010 #1 (3.05m) -> Ramsey STE4453M4 USB-C -> U420-010 #2 (3.05m) -> USBHub3p -> port 0 -> Netac Portable SSD 1TB
+Drive: /dev/disk4, ExFAT "NETAC_SSD", mounted /Volumes/NETAC_SSD
+
+== Recovery ==
+SSD did not enumerate on host on connect (powered, ~103 mA on port 0, no host node).
+Recovered by Acroname API port-0 power-cycle (setPortDisable(0)/setPortEnable(0)).
+
+== Baseline throughput, 1GB random, 3 runs (cache dropped via diskutil unmount/mount) ==
+run 1  WRITE 35650069 B/s (34.0 MB/s)  | READ 41028039 B/s (39.1 MB/s)
+run 2  WRITE 35049057 B/s (33.4 MB/s)  | READ 40353838 B/s (38.5 MB/s)
+run 3  WRITE 34776058 B/s (33.2 MB/s)  | READ 40378388 B/s (38.5 MB/s)
+
+== Source bottleneck ruled out ==
+/dev/urandom -> /dev/null : 319727215 B/s (305 MB/s)   (not the limiter)
+/dev/zero    -> /dev/null : 37839787990 B/s (36 GB/s)
+WRITE from /dev/zero (no urandom in path): 39730704 B/s (37.9 MB/s)
+READ bs=1m  : 40724848 B/s (38.8 MB/s)
+READ bs=16m : 40690592 B/s (38.8 MB/s)
+
+== USB path of the SSD ==
+ioreg: NetacPortableSSD@02144000 parented under USBHub3p-2[0-3] (the 480 Mbps USB 2.0 companion interface), NOT USBHub3p-3 (SuperSpeed 5 Gbps).
+system_profiler: "SSD under: HS-480Mbps" (x3).
+Hub API getDownstreamDataSpeed(port 0) = 1  -> High Speed / USB 2.0 (480 Mbps).
+After clearPortErrorStatus + setSuperSpeedDataEnable + clean power-cycle: still 1 (USB 2.0). Port error 0x0, current ~105 mA. SuperSpeed link to the downstream device never trains.
+
+== Integrity check, 256MB random ==
+write sha256: 9c71d46431e31d7ceb943a6e694865e086f2d947d0716bb0ed3e0f5b966c2837
+read  sha256: 9c71d46431e31d7ceb943a6e694865e086f2d947d0716bb0ed3e0f5b966c2837
+result: PASS — no corruption (data survives the chain intact at USB 2.0 speed)

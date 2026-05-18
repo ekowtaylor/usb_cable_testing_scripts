@@ -1,7 +1,17 @@
 # Resume Notes — USB Cable Validation Testing
 
-**Last session:** May 17, 2026
+**Last session:** May 18, 2026
 **Next machine:** Continue on a machine with USB write access (sudo/diskutil)
+
+> **⚠️ May 18 update — throughput test ran, FAILED on speed (not on the cable).**
+> The Netac SSD links at **USB 2.0 (480 Mbps), ~35 MB/s**, not SuperSpeed 5 Gbps.
+> Data integrity PASSED (no corruption). Hub uplink is fine — the broken SuperSpeed
+> link is the **last hop only** (USBHub3p port 0 → SSD). See
+> `reports/U420-010-x2-STE4453M4-USB-C-throughput.md`.
+> **Next action:** swap the short SSD↔hub cable for a known SuperSpeed cable and/or
+> try a different downstream port, then re-run the throughput test.
+> Note: brainstem SDK is now installed (`pip3 install brainstem`, v2.12.2). The SSD
+> is already formatted ExFAT `NETAC_SSD` — the reformat step below is no longer needed.
 
 ---
 

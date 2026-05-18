@@ -1,2 +1,4 @@
 timestamp,sample,hub_model,hub_serial,device,port,cycle,status,speed_code,speed_label,notes
 2026-05-17T02:00:49.390269,u420_010_ramsey,USBHub3p (model 19),0xb72d5b42,data,,,PASS,4,SuperSpeed+ (10 Gbps),
+2026-05-18T04:07:24.483943,conn_check,,,control,,,FAIL,1,Full Speed (12 Mbps),
+2026-05-18T04:07:24.618286,conn_check,,,data,,,PASS,4,SuperSpeed+ (10 Gbps),
