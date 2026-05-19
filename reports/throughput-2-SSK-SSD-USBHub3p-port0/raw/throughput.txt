@@ -1,0 +1,14 @@
+drive=/Volumes/SSK SSD id=disk4s2  Mon May 18 08:43:17 PDT 2026
+=== SEQUENTIAL WRITE (1 GiB x3) ===
+  write run 1: 253.5 MB/s  (1073741824 bytes / 4.236328s)
+  write run 2: 303.9 MB/s  (1073741824 bytes / 3.532950s)
+  write run 3: 301.4 MB/s  (1073741824 bytes / 3.562801s)
+=== SEQUENTIAL READ (1 GiB x3, cache cleared) ===
+  read run 1:  402.6 MB/s  (1073741824 bytes / 2.667105s)
+  read run 2:  402.3 MB/s  (1073741824 bytes / 2.668837s)
+  read run 3:  402.2 MB/s  (1073741824 bytes / 2.669732s)
+=== INTEGRITY (256 MiB random, sha256 write vs read) ===
+  write sha256: d013d43c8861d63f6a1114b646ee36ca469b0b44709301cb95e76cea5c0baa7a
+  read  sha256: d013d43c8861d63f6a1114b646ee36ca469b0b44709301cb95e76cea5c0baa7a
+  INTEGRITY: PASS (match)
+=== DONE Mon May 18 08:43:53 PDT 2026 ===

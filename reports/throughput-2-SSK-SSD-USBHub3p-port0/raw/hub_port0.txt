@@ -1,0 +1,10 @@
+USBHub3p (model 19, serial 0xb72d5b42, 8 ports)
+port0 downstreamDataSpeed=2 (0=NA,1=USB2,2=SuperSpeed)  portError=0x0
+  | +-o USBHub3p-Stem@00100000  <class IOUSBHostDevice, id 0x10017e1f0, registered, matched, active, busy 0 (14 ms), retain 34>
+    +-o USBHub3p-2[A]@01100000  <class IOUSBHostDevice, id 0x10017e389, registered, matched, active, busy 0 (53 ms), retain 34>
+    | +-o USBHub3p-2[4-7]@01130000  <class IOUSBHostDevice, id 0x10017e3d6, registered, matched, active, busy 0 (16 ms), retain 31>
+    | +-o USBHub3p-2[0-3]@01140000  <class IOUSBHostDevice, id 0x10017e3e7, registered, matched, active, busy 0 (17 ms), retain 31>
+    +-o USBHub3p-3[A]@01200000  <class IOUSBHostDevice, id 0x10017e38b, registered, matched, active, busy 0 (396 ms), retain 34>
+      +-o USBHub3p-3[0-3]@01240000  <class IOUSBHostDevice, id 0x10017e3b2, registered, matched, active, busy 0 (372 ms), retain 32>
+      | +-o SSK SSD@01244000  <class IOUSBHostDevice, id 0x10017e4b2, registered, matched, active, busy 0 (212 ms), retain 121>
+      +-o USBHub3p-3[4-7]@01230000  <class IOUSBHostDevice, id 0x10017e3b4, registered, matched, active, busy 0 (22 ms), retain 31>
